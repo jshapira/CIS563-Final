@@ -64,6 +64,7 @@
 		Vector3DF		pos;
 		DWORD			clr;
 		int				next;
+		int             state;
 	};
 	
 	struct Particle {	

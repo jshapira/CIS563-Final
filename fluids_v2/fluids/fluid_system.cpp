@@ -191,19 +191,23 @@ void FluidSystem::Run ()
 
 			start.SetSystemTime ( ACC_NSEC );
 			Grid_InsertParticles ();
-			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; printf ( "INSERT: %s\n", stop.GetReadableTime().c_str() ); }
+			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; //printf ( "INSERT: %s\n", stop.GetReadableTime().c_str() ); 
+			}
 		
 			start.SetSystemTime ( ACC_NSEC );
 			SPH_ComputePressureGrid ();
-			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; printf ( "PRESS: %s\n", stop.GetReadableTime().c_str() ); }
+			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start;// printf ( "PRESS: %s\n", stop.GetReadableTime().c_str() ); 
+			}
 
 			start.SetSystemTime ( ACC_NSEC );
 			SPH_ComputeForceGridNC ();		
-			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; printf ( "FORCE: %s\n", stop.GetReadableTime().c_str() ); }
+			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; //printf ( "FORCE: %s\n", stop.GetReadableTime().c_str() ); 
+			}
 
 			start.SetSystemTime ( ACC_NSEC );
 			Advance();
-			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; printf ( "ADV: %s\n", stop.GetReadableTime().c_str() ); }
+			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; //printf ( "ADV: %s\n", stop.GetReadableTime().c_str() );
+			}
 		}		
 		
 	#endif
@@ -363,6 +367,10 @@ void FluidSystem::Advance ()
 		p->vel_eval *= 0.5;					// v(t+1) = [v(t-1/2) + v(t+1/2)] * 0.5		used to compute forces later
 		p->vel = vnext;
 		vnext *= m_DT/ss;
+
+
+		//GHETTO ASS FIXES HURRR
+		if (p->state == 0)
 		p->pos += vnext;						// p(t+1) = p(t) + v(t+1/2) dt
 
 		if ( m_Param[CLR_MODE]==1.0 ) {
@@ -428,12 +436,12 @@ void FluidSystem::Advance ()
 
 void FluidSystem::SPH_Setup ()
 {
-	m_Param [ SPH_SIMSCALE ] =		0.004;			// unit size
+	m_Param [ SPH_SIMSCALE ] =		0.008;	//.004		// unit size
 	m_Param [ SPH_VISC ] =			0.2;			// pascal-second (Pa.s) = 1 kg m^-1 s^-1  (see wikipedia page on viscosity)
 	m_Param [ SPH_RESTDENSITY ] =	600.0;			// kg / m^3
 	m_Param [ SPH_PMASS ] =			0.00020543;		// kg
 	m_Param [ SPH_PRADIUS ] =		0.004;			// m
-	m_Param [ SPH_PDIST ] =			0.0059;			// m
+	m_Param [ SPH_PDIST ] =			.002; //0.0059;			// m
 	m_Param [ SPH_SMOOTHRADIUS ] =	0.01;			// m 
 	m_Param [ SPH_INTSTIFF ] =		1.00;
 	m_Param [ SPH_EXTSTIFF ] =		10000.0;
@@ -481,7 +489,8 @@ void FluidSystem::SPH_CreateExample ( int n, int nmax )
 		//m_Vec [ SPH_INITMIN ].Set ( -5, -5, 10 );
 		//m_Vec [ SPH_INITMAX ].Set ( 5, 5, 20 );
 		
-		m_Vec [ SPH_INITMIN ].Set ( -20, -26, 10 );
+		m_Vec [ SPH_INITMIN ].Set ( -20, -20, 10 );
+		//m_Vec [ SPH_INITMAX ].Set ( 0, 0, 20 );
 		m_Vec [ SPH_INITMAX ].Set ( 20, 26, 40 );
 
 		m_Param [ FORCE_XMIN_SIN ] = 12.0;
@@ -491,7 +500,8 @@ void FluidSystem::SPH_CreateExample ( int n, int nmax )
 		m_Vec [ SPH_VOLMIN ].Set ( -30, -14, 0 );
 		m_Vec [ SPH_VOLMAX ].Set ( 30, 14, 60 );
 		m_Vec [ SPH_INITMIN ].Set ( 0, -13, 0 );
-		m_Vec [ SPH_INITMAX ].Set ( 29, 13, 30 );		
+		//m_Vec [ SPH_INITMAX ].Set ( 29, 13, 30 );
+		m_Vec [ SPH_INITMAX ].Set ( 10, -3, 10 );
 		m_Vec [ PLANE_GRAV_DIR ].Set ( 0.0, 0, -9.8 );
 		break;
 	case 2:		// Dual-Wave pool
