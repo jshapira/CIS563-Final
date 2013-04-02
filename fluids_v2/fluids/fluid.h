@@ -40,7 +40,7 @@
 		float			density;	
 		Vector3DF		sph_force;
 
-		//int				state;
+		int				state;
 	};
 
 #endif /*PARTICLE_H_*/

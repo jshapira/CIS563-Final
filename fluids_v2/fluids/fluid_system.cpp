@@ -253,8 +253,13 @@ void FluidSystem::Advance ()
 	ss = m_Param[SPH_SIMSCALE];
 
 	dat1_end = mBuf[0].data + NumPoints()*mBuf[0].stride;
+	int i = 1;
 	for ( dat1 = mBuf[0].data; dat1 < dat1_end; dat1 += mBuf[0].stride ) {
-		p = (Fluid*) dat1;		
+		p = (Fluid*) dat1;	
+		if (i % 2 == 0) //OKAY WELL THIS IS OBVIOUSLY SUPER GHETTO. 
+		p->state = 1;
+		else p->state = 0;
+		i++;
 
 		// Compute Acceleration		
 		accel = p->sph_force;
@@ -370,7 +375,7 @@ void FluidSystem::Advance ()
 
 
 		//GHETTO ASS FIXES HURRR
-		//if (p->state == 0)
+		if (p->state == 0)
 		p->pos += vnext;						// p(t+1) = p(t) + v(t+1/2) dt
 
 		if ( m_Param[CLR_MODE]==1.0 ) {
