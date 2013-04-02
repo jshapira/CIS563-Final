@@ -14,3 +14,6 @@
 
 */*.opensdf
 *.opensdf
+
+fluids_v2/Debug
+fluids_v2/Release
