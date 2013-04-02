@@ -1,3 +1,0 @@
-debug: CDebug started to file.
-
-debug: CDebug stopped.
