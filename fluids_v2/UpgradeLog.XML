@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type='text/xsl' href='_UpgradeReport_Files/UpgradeReport.xslt'?><UpgradeLog>
+<Properties><Property Name="Solution" Value="fluids_2008">
+</Property><Property Name="Solution File" Value="C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\fluids_2008.sln">
+</Property><Property Name="User Options File" Value="C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\fluids_2008.suo">
+</Property><Property Name="Date" Value="Sunday, March 31, 2013">
+</Property><Property Name="Time" Value="15:27 PM">
+</Property></Properties><Event ErrorLevel="0" Project="" Source="fluids_2008.sln" Description="File successfully backed up as C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\fluids_2008.sln.old">
+</Event><Event ErrorLevel="0" Project="" Source="fluids_2008.suo" Description="File successfully backed up as C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\fluids_2008.suo.old">
+</Event><Event ErrorLevel="0" Project="fluids" Source="fluids.vcproj" Description="Converting project file 'C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\fluids.vcproj'.">
+</Event><Event ErrorLevel="1" Project="fluids" Source="fluids.vcproj" Description="VCWebServiceProxyGeneratorTool is no longer supported. The tool has been removed from your project settings.">
+</Event><Event ErrorLevel="1" Project="fluids" Source="fluids.vcproj" Description="Attribute 'Detect64BitPortabilityProblems' of 'VCCLCompilerTool' is not supported in this version and has been removed during conversion.">
+</Event><Event ErrorLevel="1" Project="fluids" Source="fluids.vcproj" Description="Attribute 'Detect64BitPortabilityProblems' of 'VCCLCompilerTool' is not supported in this version and has been removed during conversion.">
+</Event><Event ErrorLevel="1" Project="fluids" Source="fluids.vcproj" Description="MSB8012: $(TargetName) ('fluids') does not match the Linker's OutputFile property value 'C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\Debug\fluids_debug.exe' ('fluids_debug') in project configuration 'Debug|Win32'. This may cause your project to build incorrectly. To correct this, please make sure that $(TargetName) property value matches the value specified in %(Link.OutputFile).">
+</Event><Event ErrorLevel="1" Project="fluids" Source="fluids.vcproj" Description="MSB8012: $(TargetPath) ('C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\Debug\fluids.exe') does not match the Linker's OutputFile property value 'C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\Debug\fluids_debug.exe' ('C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\Debug\fluids_debug.exe') in project configuration 'Debug|Win32'. This may cause your project to build incorrectly. To correct this, please make sure that $(TargetPath) property value matches the value specified in %(Link.OutputFile).">
+</Event><Event ErrorLevel="0" Project="fluids" Source="fluids.vcproj" Description="Done converting to new project file 'C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\fluids.vcxproj'.">
+</Event><Event ErrorLevel="3" Project="fluids" Source="fluids.vcproj" Description="Converted">
+</Event><Event ErrorLevel="0" Project="" Source="fluids_2008.sln" Description="Solution converted successfully">
+</Event><Event ErrorLevel="3" Project="" Source="fluids_2008.sln" Description="Converted">
+</Event></UpgradeLog>

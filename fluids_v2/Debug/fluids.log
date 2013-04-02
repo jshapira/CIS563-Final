@@ -1,0 +1,81 @@
+﻿Build started 4/2/2013 12:07:18 AM.
+     1>Project "C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\fluids.vcxproj" on node 2 (build target(s)).
+     1>InitializeBuildStatus:
+         Creating "Debug\fluids.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /Ifluids /Icommon /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D FREEGLUT_STATIC /D _VC80_UPGRADE=0x0700 /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt fluids\fluid.cpp fluids\fluid_system.cpp main.cpp
+         fluid.cpp
+         Generating Code...
+         Compiling...
+         fluid_system.cpp
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(141): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(245): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(248): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(249): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(250): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(253): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(272): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(276): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(276): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(276): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(283): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(283): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(283): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(288): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(293): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(293): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(293): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(296): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(300): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(300): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(300): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(309): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(309): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(309): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(315): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(315): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(315): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(324): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(324): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(324): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(334): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(334): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(334): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(343): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(343): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(343): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(373): error C2039: 'state' : is not a member of 'Fluid'
+                 c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid.h(30) : see declaration of 'Fluid'
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(382): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(383): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(610): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(614): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(615): warning C4244: 'argument' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(674): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(675): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(690): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(691): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(693): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(716): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(729): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(730): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(774): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(775): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(776): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(795): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(826): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(827): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(828): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(851): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(852): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(854): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(869): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\hms\desktop\jennieshapira\fluids_v2\fluids_v2\fluids\fluid_system.cpp(871): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+         Generating Code...
+         Skipping... (no relevant changes detected)
+         main.cpp
+     1>Done Building Project "C:\Users\HMS\Desktop\JennieShapira\fluids_v2\fluids_v2\fluids.vcxproj" (build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:01.45
