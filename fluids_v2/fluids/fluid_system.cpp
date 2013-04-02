@@ -370,7 +370,7 @@ void FluidSystem::Advance ()
 
 
 		//GHETTO ASS FIXES HURRR
-		if (p->state == 0)
+		//if (p->state == 0)
 		p->pos += vnext;						// p(t+1) = p(t) + v(t+1/2) dt
 
 		if ( m_Param[CLR_MODE]==1.0 ) {
