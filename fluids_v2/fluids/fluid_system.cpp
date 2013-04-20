@@ -46,10 +46,10 @@ FluidSystem::FluidSystem (){
 
 	cubeMinX = -10; 
 	cubeMinY = -10; 
-	cubeMinZ = 0;
+	cubeMinZ = 2;
 	cubeMaxX = 10; 
 	cubeMaxY = 10; 
-	cubeMaxZ = 20;
+	cubeMaxZ = 22;
 }
 
 void FluidSystem::Initialize ( int mode, int total )
@@ -143,6 +143,8 @@ int FluidSystem::AddPointReuse ()
 	f->next = 0x0;
 	f->pressure = 0;
 	f->density = 0;
+	f->state = 0;
+	f->temperature = 20;
 	return ndx;
 }
 
@@ -360,6 +362,13 @@ void FluidSystem::Advance ()
 		p->vel_eval = p->vel;  */	
 
 		p->pos += vnext;
+
+		float colorVal = 1 - p->temperature/200;
+		if(p->temperature < 32){
+			colorVal = 1;
+		}
+
+		p->clr = COLORA(colorVal, colorVal, colorVal, 1);
 
 
 		if ( m_Toggle[WRAP_X] ) {
@@ -721,10 +730,21 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 			pterm = -0.5f * c * m_SpikyKern * ( p->pressure + pcurr->pressure) / m_NDist[i][j];
 			dterm = c * p->density * pcurr->density;
 			vterm = m_LapKern * visc;
-			force.x += ( pterm * dx + vterm * (pcurr->vel_eval.x - p->vel_eval.x) ) * dterm;
-			force.y += ( pterm * dy + vterm * (pcurr->vel_eval.y - p->vel_eval.y) ) * dterm;
-			force.z += ( pterm * dz + vterm * (pcurr->vel_eval.z - p->vel_eval.z) ) * dterm;
+
+			//Only update the force as a fluid if it is a liquid
+			if(p->state == 1){
+				force.x += ( pterm * dx + vterm * (pcurr->vel_eval.x - p->vel_eval.x) ) * dterm;
+				force.y += ( pterm * dy + vterm * (pcurr->vel_eval.y - p->vel_eval.y) ) * dterm;
+				force.z += ( pterm * dz + vterm * (pcurr->vel_eval.z - p->vel_eval.z) ) * dterm;
+			}
 		}			
+
+		//if its a solid, just stay in place
+		if(p->state == 0){
+			force -= m_Vec[PLANE_GRAV_DIR];
+			force *= 1/m_Param[SPH_PMASS];
+		}
+		
 		p->sph_force = force;
 	}
 }
