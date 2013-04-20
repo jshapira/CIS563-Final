@@ -32,6 +32,8 @@
 
 	#include "point_set.h"
 	#include "fluid.h"
+
+
 	
 	// Scalar params
 	#define SPH_SIMSIZE			4
@@ -95,7 +97,22 @@
 		
 		void SPH_ComputeForceSlow ();				// O(n^2)
 		void SPH_ComputeForceGrid ();				// O(kn) - spatial grid
-		void SPH_ComputeForceGridNC ();				// O(cn) - neighbor table		
+		void SPH_ComputeForceGridNC ();				// O(cn) - neighbor table	
+
+			//Values for Simulation Size & Initial Ice Cube Size
+		float volumeMinX; 
+		float volumeMinY; 
+		float volumeMinZ;
+		float volumeMaxX; 
+		float volumeMaxY; 
+		float volumeMaxZ;
+
+		float cubeMinX; 
+		float cubeMinY; 
+		float cubeMinZ;
+		float cubeMaxX; 
+		float cubeMaxY; 
+		float cubeMaxZ;
 		
 	private:
 

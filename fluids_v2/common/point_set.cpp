@@ -246,7 +246,8 @@ void PointSet::AddVolume ( Vector3DF min, Vector3DF max, float spacing )
 				//pos.y += -0.05 + float( rand() * 0.1 ) / RAND_MAX;
 				//pos.z += -0.05 + float( rand() * 0.1 ) / RAND_MAX;
 				p->pos = pos;				//P is a pt- give state variable?-- set all as 1
-				p->state = 0;
+				//p->state = 0;
+				//p->temp = 20;
 				p->clr = COLORA( (x-min.x)/dx, (y-min.y)/dy, (z-min.z)/dz, 1);
 			}
 		}

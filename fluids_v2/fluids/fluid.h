@@ -40,7 +40,9 @@
 		float			density;	
 		Vector3DF		sph_force;
 
-		int				state;
+		int				state; //0 is ice, 1 is water
+		float			temperature;
+
 	};
 
 #endif /*PARTICLE_H_*/

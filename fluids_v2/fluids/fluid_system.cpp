@@ -34,14 +34,22 @@
 #include "mtime.h"
 #include "fluid_system.h"
 
-#ifdef BUILD_CUDA
-	#include "fluid_system_host.cuh"
-#endif
-
 #define EPSILON			0.00001f			//for collision detection
 
-FluidSystem::FluidSystem ()
-{
+FluidSystem::FluidSystem (){
+	volumeMinX = -30; 
+	volumeMinY = -30; 
+	volumeMinZ = 0;
+	volumeMaxX = 30; 
+	volumeMaxY = 30; 
+	volumeMaxZ = 30;
+
+	cubeMinX = -10; 
+	cubeMinY = -10; 
+	cubeMinZ = 0;
+	cubeMaxX = 10; 
+	cubeMaxY = 10; 
+	cubeMaxZ = 20;
 }
 
 void FluidSystem::Initialize ( int mode, int total )
@@ -63,7 +71,11 @@ void FluidSystem::Initialize ( int mode, int total )
 	AddAttribute ( 0, "density", sizeof ( double ), false );
 	AddAttribute ( 0, "sph_force", sizeof ( Vector3DF ), false );
 	AddAttribute ( 0, "next", sizeof ( Fluid* ), false );
-	AddAttribute ( 0, "tag", sizeof ( bool ), false );		
+	AddAttribute ( 0, "tag", sizeof ( bool ), false );
+
+	//ICE Attributes
+	AddAttribute(0, "state", sizeof(int), false);
+	AddAttribute(0, "temperature", sizeof(float), false);
 		
 	SPH_Setup ();
 	Reset ( total );	
@@ -111,6 +123,8 @@ int FluidSystem::AddPoint ()
 	f->next = 0x0;
 	f->pressure = 0;
 	f->density = 0;
+	f->state = 0;
+	f->temperature = 20;
 	return ndx;
 }
 
@@ -151,64 +165,18 @@ void FluidSystem::Run ()
 		SPH_ComputeForceSlow ();
 	#else
 
-		if ( m_Toggle[USE_CUDA] ) {
-			
-			#ifdef BUILD_CUDA
-				// -- GPU --
-				start.SetSystemTime ( ACC_NSEC );		
-				TransferToCUDA ( mBuf[0].data, (int*) &m_Grid[0], NumPoints() );
-				if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; printf ( "TO: %s\n", stop.GetReadableTime().c_str() ); }
-			
-				start.SetSystemTime ( ACC_NSEC );		
-				Grid_InsertParticlesCUDA ();
-				if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; printf ( "INSERT (CUDA): %s\n", stop.GetReadableTime().c_str() ); }
-
-				start.SetSystemTime ( ACC_NSEC );
-				SPH_ComputePressureCUDA ();
-				if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; printf ( "PRESS (CUDA): %s\n", stop.GetReadableTime().c_str() ); }
-
-				start.SetSystemTime ( ACC_NSEC );
-				SPH_ComputeForceCUDA (); 
-				if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; printf ( "FORCE (CUDA): %s\n", stop.GetReadableTime().c_str() ); }
-
-				//** CUDA integrator is incomplete..
-				// Once integrator is done, we can remove TransferTo/From steps
-				/*start.SetSystemTime ( ACC_NSEC );
-				SPH_AdvanceCUDA( m_DT, m_DT/m_Param[SPH_SIMSCALE] );
-				if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; printf ( "ADV (CUDA): %s\n", stop.GetReadableTime().c_str() ); }*/
-
-				start.SetSystemTime ( ACC_NSEC );		
-				TransferFromCUDA ( mBuf[0].data, (int*) &m_Grid[0], NumPoints() );
-				if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; printf ( "FROM: %s\n", stop.GetReadableTime().c_str() ); }
-
-				// .. Do advance on CPU 
-				Advance();
-
-			#endif
-			
-		} else {
-			// -- CPU only --
-
 			start.SetSystemTime ( ACC_NSEC );
 			Grid_InsertParticles ();
-			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; //printf ( "INSERT: %s\n", stop.GetReadableTime().c_str() ); 
-			}
 		
 			start.SetSystemTime ( ACC_NSEC );
 			SPH_ComputePressureGrid ();
-			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start;// printf ( "PRESS: %s\n", stop.GetReadableTime().c_str() ); 
-			}
+
 
 			start.SetSystemTime ( ACC_NSEC );
 			SPH_ComputeForceGridNC ();		
-			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; //printf ( "FORCE: %s\n", stop.GetReadableTime().c_str() ); 
-			}
 
 			start.SetSystemTime ( ACC_NSEC );
-			Advance();
-			if ( bTiming) { stop.SetSystemTime ( ACC_NSEC ); stop = stop - start; //printf ( "ADV: %s\n", stop.GetReadableTime().c_str() );
-			}
-		}		
+			Advance();	
 		
 	#endif
 }
@@ -256,10 +224,6 @@ void FluidSystem::Advance ()
 	int i = 1;
 	for ( dat1 = mBuf[0].data; dat1 < dat1_end; dat1 += mBuf[0].stride ) {
 		p = (Fluid*) dat1;	
-		if (i % 2 == 0) //OKAY WELL THIS IS OBVIOUSLY SUPER GHETTO. 
-		p->state = 1;
-		else p->state = 0;
-		i++;
 
 		// Compute Acceleration		
 		accel = p->sph_force;
@@ -373,11 +337,6 @@ void FluidSystem::Advance ()
 		p->vel = vnext;
 		vnext *= m_DT/ss;
 
-
-		//GHETTO ASS FIXES HURRR
-		if (p->state == 0)
-		p->pos += vnext;						// p(t+1) = p(t) + v(t+1/2) dt
-
 		if ( m_Param[CLR_MODE]==1.0 ) {
 			adj = fabs(vnext.x)+fabs(vnext.y)+fabs(vnext.z) / 7000.0;
 			adj = (adj > 1.0) ? 1.0 : adj;
@@ -399,6 +358,8 @@ void FluidSystem::Advance ()
 		p->vel_eval *= m_DT/d;
 		p->pos += p->vel_eval;
 		p->vel_eval = p->vel;  */	
+
+		p->pos += vnext;
 
 
 		if ( m_Toggle[WRAP_X] ) {
@@ -441,12 +402,30 @@ void FluidSystem::Advance ()
 
 void FluidSystem::SPH_Setup ()
 {
-	m_Param [ SPH_SIMSCALE ] =		0.008;	//.004		// unit size
+	//m_Param [ SPH_SIMSCALE ] =		0.01;	//.004		// unit size
+	//m_Param [ SPH_VISC ] =			0.2;			// pascal-second (Pa.s) = 1 kg m^-1 s^-1  (see wikipedia page on viscosity)
+	//m_Param [ SPH_RESTDENSITY ] =	600.0;			// kg / m^3
+	//m_Param [ SPH_PMASS ] =			0.00020543;		// kg
+	//m_Param [ SPH_PRADIUS ] =		0.002;			// m
+	//m_Param [ SPH_PDIST ] =			.0005; //0.0059;			// m
+	//m_Param [ SPH_SMOOTHRADIUS ] =	0.01;			// m 
+	//m_Param [ SPH_INTSTIFF ] =		1.00;
+	//m_Param [ SPH_EXTSTIFF ] =		10000.0;
+	//m_Param [ SPH_EXTDAMP ] =		256.0;
+	//m_Param [ SPH_LIMIT ] =			200.0;			// m / s
+
+	//m_Toggle [ SPH_GRID ] =		false;
+	//m_Toggle [ SPH_DEBUG ] =	false;
+
+	//SPH_ComputeKernels ();
+
+
+	m_Param [ SPH_SIMSCALE ] =		0.004;			// unit size
 	m_Param [ SPH_VISC ] =			0.2;			// pascal-second (Pa.s) = 1 kg m^-1 s^-1  (see wikipedia page on viscosity)
 	m_Param [ SPH_RESTDENSITY ] =	600.0;			// kg / m^3
 	m_Param [ SPH_PMASS ] =			0.00020543;		// kg
 	m_Param [ SPH_PRADIUS ] =		0.004;			// m
-	m_Param [ SPH_PDIST ] =			.002; //0.0059;			// m
+	m_Param [ SPH_PDIST ] =			0.0059;			// m
 	m_Param [ SPH_SMOOTHRADIUS ] =	0.01;			// m 
 	m_Param [ SPH_INTSTIFF ] =		1.00;
 	m_Param [ SPH_EXTSTIFF ] =		10000.0;
@@ -476,134 +455,12 @@ void FluidSystem::SPH_CreateExample ( int n, int nmax )
 	Reset ( nmax );
 	
 	switch ( n ) {
-	case 0:		// Wave pool
-				
-		//-- TEST CASE: 2x2x2 grid, 32 particles.  NOTE: Set PRADIUS to 0.0004 to reduce wall influence
-		//     grid 0:    3*3*2 = 18 particles
-		//     grid 1,2:  3*1*2 =  6 particles
-		//     grid 3:    1*1*2 =  2 particles
-		//     grid 4,5,6:    0 =  0 particles
-		/*m_Vec [ SPH_VOLMIN ].Set ( -2.5, -2.5, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 2.5, 2.5, 5.0 );	
-		m_Vec [ SPH_INITMIN ].Set ( -2.5, -2.5, 0 );	
-		m_Vec [ SPH_INITMAX ].Set ( 2.5, 2.5, 1.6 );*/  
-		
-		m_Vec [ SPH_VOLMIN ].Set ( -30, -30, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 30, 30, 40 );		
+	case 0:		// ICE
 
-		//m_Vec [ SPH_INITMIN ].Set ( -5, -5, 10 );
-		//m_Vec [ SPH_INITMAX ].Set ( 5, 5, 20 );
-		
-		m_Vec [ SPH_INITMIN ].Set ( -20, -20, 10 );
-		//m_Vec [ SPH_INITMAX ].Set ( 0, 0, 20 );
-		m_Vec [ SPH_INITMAX ].Set ( 20, 26, 40 );
-
-		m_Param [ FORCE_XMIN_SIN ] = 12.0;
-		m_Param [ BOUND_ZMIN_SLOPE ] = 0.05;
-		break;
-	case 1:		// Dam break
-		m_Vec [ SPH_VOLMIN ].Set ( -30, -14, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 30, 14, 60 );
-		m_Vec [ SPH_INITMIN ].Set ( 0, -13, 0 );
-		//m_Vec [ SPH_INITMAX ].Set ( 29, 13, 30 );
-		m_Vec [ SPH_INITMAX ].Set ( 10, -3, 10 );
-		m_Vec [ PLANE_GRAV_DIR ].Set ( 0.0, 0, -9.8 );
-		break;
-	case 2:		// Dual-Wave pool
-		m_Vec [ SPH_VOLMIN ].Set ( -60, -5, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 60, 5, 50 );
-		m_Vec [ SPH_INITMIN ].Set ( -46, -5, 0 );
-		m_Vec [ SPH_INITMAX ].Set ( 46, 5, 15 );
-		m_Param [ FORCE_XMIN_SIN ] = 8.0;
-		m_Param [ FORCE_XMAX_SIN ] = 8.0;
-		m_Vec [ PLANE_GRAV_DIR ].Set ( 0.0, 0, -9.8 );
-		break;
-	case 3:		// Swirl Stream
-		m_Vec [ SPH_VOLMIN ].Set ( -30, -30, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 30, 30, 50 );
-		m_Vec [ SPH_INITMIN ].Set ( -30, -30, 0 );
-		m_Vec [ SPH_INITMAX ].Set ( 30, 30, 40 );
-		m_Vec [ EMIT_POS ].Set ( -20, -20, 22 );
-		m_Vec [ EMIT_RATE ].Set ( 1, 4, 0 );
-		m_Vec [ EMIT_ANG ].Set ( 0, 120, 1.5 );
-		m_Vec [ EMIT_DANG ].Set ( 0, 0, 0 );
-		m_Vec [ PLANE_GRAV_DIR ].Set ( 0.0, 0, -9.8 );
-		break;
-	case 4:		// Shockwave
-		m_Vec [ SPH_VOLMIN ].Set ( -60, -15, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 60, 15, 50 );
-		m_Vec [ SPH_INITMIN ].Set ( -59, -14, 0 );
-		m_Vec [ SPH_INITMAX ].Set ( 59, 14, 30 );
-		m_Vec [ PLANE_GRAV_DIR ].Set ( 0.0, 0, -9.8 );
-		m_Toggle [ WALL_BARRIER ] = true;
-		m_Toggle [ WRAP_X ] = true;
-		break;
-	case 5:		// Zero gravity
-		m_Vec [ SPH_VOLMIN ].Set ( -40, -40, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 40, 40, 50 );
-		m_Vec [ SPH_INITMIN ].Set ( -20, -20, 20 );
-		m_Vec [ SPH_INITMAX ].Set ( 20, 20, 40 );
-		m_Vec [ EMIT_POS ].Set ( -20, 0, 40 );
-		m_Vec [ EMIT_RATE ].Set ( 2, 1, 0 );		
-		m_Vec [ EMIT_ANG ].Set ( 0, 120, 0.25 );
-		m_Vec [ PLANE_GRAV_DIR ].Set ( 0, 0, 0 );
-		m_Param [ SPH_INTSTIFF ] = 0.20;		
-		break;
-	case 6:		// Point gravity		
-		m_Vec [ SPH_VOLMIN ].Set ( -40, -40, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 40, 40, 50 );
-		m_Vec [ SPH_INITMIN ].Set ( -20, -20, 20 );
-		m_Vec [ SPH_INITMAX ].Set ( 20, 20, 40 );
-		m_Param [ SPH_INTSTIFF ] = 0.50;		
-		m_Vec [ EMIT_POS ].Set ( -20, 20, 25 );
-		m_Vec [ EMIT_RATE ].Set ( 1, 4, 0 );		
-		m_Vec [ EMIT_ANG ].Set ( -20, 100, 2.0 );
-		m_Vec [ POINT_GRAV_POS ].Set ( 0, 0, 25 );
-		m_Vec [ PLANE_GRAV_DIR ].Set ( 0, 0, 0 );
-		m_Param [ POINT_GRAV ] = 3.5;
-		break;
-	case 7:		// Levy break
-		m_Vec [ SPH_VOLMIN ].Set ( -40, -40, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 40, 40, 50 );
-		m_Vec [ SPH_INITMIN ].Set ( 10, -40, 0 );
-		m_Vec [ SPH_INITMAX ].Set ( 40, 40, 50 );
-		m_Vec [ EMIT_POS ].Set ( 34, 27, 16.6 );
-		m_Vec [ EMIT_RATE ].Set ( 2, 9, 0 );		
-		m_Vec [ EMIT_ANG ].Set ( 118, 200, 1.0 );
-		m_Toggle [ LEVY_BARRIER ] = true;
-		m_Param [ BOUND_ZMIN_SLOPE ] = 0.1;
-		m_Vec [ PLANE_GRAV_DIR ].Set ( 0.0, 0, -9.8 );
-		break;
-	case 8:		// Drain
-		m_Vec [ SPH_VOLMIN ].Set ( -20, -20, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 20, 20, 50 );
-		m_Vec [ SPH_INITMIN ].Set ( -15, -20, 20 );
-		m_Vec [ SPH_INITMAX ].Set ( 20, 20, 50 );
-		m_Vec [ EMIT_POS ].Set ( -16, -16, 30 );
-		m_Vec [ EMIT_RATE ].Set ( 1, 4, 0 );		
-		m_Vec [ EMIT_ANG ].Set ( -20, 140, 1.8 );
-		m_Toggle [ DRAIN_BARRIER ] = true;
-		m_Vec [ PLANE_GRAV_DIR ].Set ( 0.0, 0, -9.8 );
-		break;
-	case 9:			// Tumbler
-		m_Vec [ SPH_VOLMIN ].Set ( -30, -30, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 30, 30, 50 );
-		m_Vec [ SPH_INITMIN ].Set ( 24, -29, 20 );
-		m_Vec [ SPH_INITMAX ].Set ( 29, 29, 40 );
-		m_Param [ SPH_VISC ] = 0.1;		
-		m_Param [ SPH_INTSTIFF ] = 0.50;
-		m_Param [ SPH_EXTSTIFF ] = 8000;
-		//m_Param [ SPH_SMOOTHRADIUS ] = 0.01;
-		m_Param [ BOUND_ZMIN_SLOPE ] = 0.4;
-		m_Param [ FORCE_XMIN_SIN ] = 12.00;
-		m_Vec [ PLANE_GRAV_DIR ].Set ( 0.0, 0, -9.8 );
-		break;	
-	case 10:		// Large sim
-		m_Vec [ SPH_VOLMIN ].Set ( -35, -35, 0 );
-		m_Vec [ SPH_VOLMAX ].Set ( 35, 35, 60 );
-		m_Vec [ SPH_INITMIN ].Set ( -5, -35, 0 );
-		m_Vec [ SPH_INITMAX ].Set ( 30, 0, 60 );
-		m_Vec [ PLANE_GRAV_DIR ].Set ( 0.0, 0, -9.8 );
+		m_Vec [ SPH_VOLMIN ].Set ( volumeMinX, volumeMinY, volumeMinZ );
+		m_Vec [ SPH_VOLMAX ].Set ( volumeMaxX, volumeMaxY, volumeMaxZ );
+		m_Vec [ SPH_INITMIN ].Set ( cubeMinX, cubeMinY, cubeMinZ );
+		m_Vec [ SPH_INITMAX ].Set ( cubeMaxX, cubeMaxY, cubeMaxZ );
 		break;
 	}	
 
@@ -614,6 +471,7 @@ void FluidSystem::SPH_CreateExample ( int n, int nmax )
 
 	float ss = m_Param [ SPH_PDIST ]*0.87 / m_Param[ SPH_SIMSCALE ];	
 	printf ( "Spacing: %f\n", ss);
+	//ss = m_Param[SPH_SMOOTHRADIUS] * 2 + m_Param[SPH_SMOOTHRADIUS];
 	AddVolume ( m_Vec[SPH_INITMIN], m_Vec[SPH_INITMAX], ss );	// Create the particles
 
 	float cell_size = m_Param[SPH_SMOOTHRADIUS]*2.0;			// Grid cell size (2r)	
@@ -625,17 +483,6 @@ void FluidSystem::SPH_CreateExample ( int n, int nmax )
 	vmin -= Vector3DF(2,2,2);
 	vmax =  m_Vec[SPH_VOLMAX];
 	vmax += Vector3DF(2,2,-2);
-
-	#ifdef BUILD_CUDA
-		FluidClearCUDA ();
-		Sleep ( 500 );
-
-		FluidSetupCUDA ( NumPoints(), sizeof(Fluid), *(float3*)& m_GridMin, *(float3*)& m_GridMax, *(float3*)& m_GridRes, *(float3*)& m_GridSize, (int) m_Vec[EMIT_RATE].x );
-
-		Sleep ( 500 );
-
-		FluidParamCUDA ( m_Param[SPH_SIMSCALE], m_Param[SPH_SMOOTHRADIUS], m_Param[SPH_PMASS], m_Param[SPH_RESTDENSITY], m_Param[SPH_INTSTIFF], m_Param[SPH_VISC] );
-	#endif
 
 }
 
