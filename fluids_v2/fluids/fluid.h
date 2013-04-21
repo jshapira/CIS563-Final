@@ -43,6 +43,7 @@
 		int				state; //0 is ice, 1 is water
 		float			temperature; //Range from 0 to 250 (32 is melting point)
 		int				numNeighbors; //0-6, used for air temp advection
+		float			newTemp; //Temp to be added to the particle temperature
 
 	};
 

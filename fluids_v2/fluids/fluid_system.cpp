@@ -76,6 +76,7 @@ void FluidSystem::Initialize ( int mode, int total )
 	//ICE Attributes
 	AddAttribute(0, "state", sizeof(int), false);
 	AddAttribute(0, "temperature", sizeof(float), false);
+	AddAttribute(0, "newTemp", sizeof(float), false);
 	AddAttribute(0, "numNeighbors", sizeof(int), false);
 		
 	SPH_Setup ();
@@ -125,8 +126,9 @@ int FluidSystem::AddPoint ()
 	f->pressure = 0;
 	f->density = 0;
 	f->state = 0;
-	f->temperature = 20;
+	f->temperature = 250;
 	f->numNeighbors = 6;
+	f->newTemp = 0;
 	return ndx;
 }
 
@@ -146,8 +148,9 @@ int FluidSystem::AddPointReuse ()
 	f->pressure = 0;
 	f->density = 0;
 	f->state = 0;
-	f->temperature = 20;
+	f->temperature = 250;
 	f->numNeighbors = 6;
+	f->newTemp = 0;
 	return ndx;
 }
 
@@ -238,7 +241,17 @@ void FluidSystem::Advance ()
 		speed = accel.x*accel.x + accel.y*accel.y + accel.z*accel.z;
 		if ( speed > SL2 ) {
 			accel *= SL / sqrt(speed);
-		}		
+		}
+
+		//Advect Temperature
+		p->temperature = p->temperature + p->newTemp * m_DT * 100;
+		p->newTemp = 0;
+
+
+		//Update state
+		if(p->temperature > 273){
+			p->state = 1;
+		}
 	
 		// Boundary Conditions
 
@@ -366,8 +379,8 @@ void FluidSystem::Advance ()
 
 		p->pos += vnext;
 
-		float colorVal = 1 - p->temperature/200;
-		if(p->temperature < 32){
+		float colorVal = 1 - p->temperature/600;
+		if(p->temperature < 273){
 			colorVal = 1;
 		}
 
@@ -486,49 +499,6 @@ void FluidSystem::SPH_CreateExample ( int n, int nmax )
 
 }
 
-// Compute Pressures - Very slow yet simple. O(n^2)
-void FluidSystem::SPH_ComputePressureSlow ()
-{
-	char *dat1, *dat1_end;
-	char *dat2, *dat2_end;
-	Fluid *p, *q;
-	int cnt = 0;
-	double dx, dy, dz, sum, dsq, c;
-	double d, d2, mR, mR2;
-	d = m_Param[SPH_SIMSCALE];
-	d2 = d*d;
-	mR = m_Param[SPH_SMOOTHRADIUS];
-	mR2 = mR*mR;	
-
-	dat1_end = mBuf[0].data + NumPoints()*mBuf[0].stride;
-	for ( dat1 = mBuf[0].data; dat1 < dat1_end; dat1 += mBuf[0].stride ) {
-		p = (Fluid*) dat1;
-
-		sum = 0.0;
-		cnt = 0;
-		
-		dat2_end = mBuf[0].data + NumPoints()*mBuf[0].stride;
-		for ( dat2 = mBuf[0].data; dat2 < dat2_end; dat2 += mBuf[0].stride ) {
-			q = (Fluid*) dat2;
-
-			if ( p==q ) continue;
-			dx = ( p->pos.x - q->pos.x)*d;		// dist in cm
-			dy = ( p->pos.y - q->pos.y)*d;
-			dz = ( p->pos.z - q->pos.z)*d;
-			dsq = (dx*dx + dy*dy + dz*dz);
-			if ( mR2 > dsq ) {
-				c =  m_R2 - dsq;
-				sum += c * c * c;
-				cnt++;
-				//if ( p == m_CurrP ) q->tag = true;
-			}
-		}	
-		p->density = sum * m_Param[SPH_PMASS] * m_Poly6Kern ;	
-		p->pressure = ( p->density - m_Param[SPH_RESTDENSITY] ) * m_Param[SPH_INTSTIFF];
-		p->density = 1.0f / p->density;
-	}
-}
-
 // Compute Pressures - Using spatial grid, and also create neighbor table
 void FluidSystem::SPH_ComputePressureGrid ()
 {
@@ -584,109 +554,6 @@ void FluidSystem::SPH_ComputePressureGrid ()
 	}
 }
 
-// Compute Forces - Very slow, but simple. O(n^2)
-void FluidSystem::SPH_ComputeForceSlow ()
-{
-	char *dat1, *dat1_end;
-	char *dat2, *dat2_end;
-	Fluid *p, *q;
-	Vector3DF force, fcurr;
-	register double pterm, vterm, dterm;
-	double c, r, d, sum, dsq;
-	double dx, dy, dz;
-	double mR, mR2, visc;
-
-	d = m_Param[SPH_SIMSCALE];
-	mR = m_Param[SPH_SMOOTHRADIUS];
-	mR2 = (mR*mR);
-	visc = m_Param[SPH_VISC];
-	vterm = m_LapKern * visc;
-
-	dat1_end = mBuf[0].data + NumPoints()*mBuf[0].stride;
-	for ( dat1 = mBuf[0].data; dat1 < dat1_end; dat1 += mBuf[0].stride ) {
-		p = (Fluid*) dat1;
-
-		sum = 0.0;
-		force.Set ( 0, 0, 0 );
-		
-		dat2_end = mBuf[0].data + NumPoints()*mBuf[0].stride;
-		for ( dat2 = mBuf[0].data; dat2 < dat2_end; dat2 += mBuf[0].stride ) {
-			q = (Fluid*) dat2;
-
-			if ( p == q ) continue;
-			dx = ( p->pos.x - q->pos.x )*d;			// dist in cm
-			dy = ( p->pos.y - q->pos.y )*d;
-			dz = ( p->pos.z - q->pos.z )*d;
-			dsq = (dx*dx + dy*dy + dz*dz);
-			if ( mR2 > dsq ) {
-				r = sqrt ( dsq );
-				c = (mR - r);
-				pterm = -0.5f * c * m_SpikyKern * ( p->pressure + q->pressure) / r;
-				dterm = c * p->density * q->density;
-				force.x += ( pterm * dx + vterm * (q->vel_eval.x - p->vel_eval.x) ) * dterm;
-				force.y += ( pterm * dy + vterm * (q->vel_eval.y - p->vel_eval.y) ) * dterm;
-				force.z += ( pterm * dz + vterm * (q->vel_eval.z - p->vel_eval.z) ) * dterm;
-			}
-		}			
-		p->sph_force = force;		
-	}
-}
-
-// Compute Forces - Using spatial grid. Faster.
-void FluidSystem::SPH_ComputeForceGrid ()
-{
-	char *dat1, *dat1_end;	
-	Fluid *p;
-	Fluid *pcurr;
-	int pndx;
-	Vector3DF force, fcurr;
-	register double pterm, vterm, dterm;
-	double c, d, dsq, r;
-	double dx, dy, dz;
-	double mR, mR2, visc;
-	float radius = m_Param[SPH_SMOOTHRADIUS] / m_Param[SPH_SIMSCALE];
-
-	d = m_Param[SPH_SIMSCALE];
-	mR = m_Param[SPH_SMOOTHRADIUS];
-	mR2 = (mR*mR);
-	visc = m_Param[SPH_VISC];
-
-	dat1_end = mBuf[0].data + NumPoints()*mBuf[0].stride;
-	for ( dat1 = mBuf[0].data; dat1 < dat1_end; dat1 += mBuf[0].stride ) {
-		p = (Fluid*) dat1;
-
-		force.Set ( 0, 0, 0 );
-
-		Grid_FindCells ( p->pos, radius );
-		for (int cell=0; cell < 8; cell++) {
-			if ( m_GridCell[cell] != -1 ) {
-				pndx = m_Grid [ m_GridCell[cell] ];				
-				while ( pndx != -1 ) {					
-					pcurr = (Fluid*) (mBuf[0].data + pndx*mBuf[0].stride);					
-					if ( pcurr == p ) {pndx = pcurr->next; continue; }
-			
-					dx = ( p->pos.x - pcurr->pos.x)*d;		// dist in cm
-					dy = ( p->pos.y - pcurr->pos.y)*d;
-					dz = ( p->pos.z - pcurr->pos.z)*d;
-					dsq = (dx*dx + dy*dy + dz*dz);
-					if ( mR2 > dsq ) {
-						r = sqrt ( dsq );
-						c = (mR - r);
-						pterm = -0.5f * c * m_SpikyKern * ( p->pressure + pcurr->pressure) / r;
-						dterm = c * p->density * pcurr->density;
-						vterm =	m_LapKern * visc;
-						force.x += ( pterm * dx + vterm * (pcurr->vel_eval.x - p->vel_eval.x) ) * dterm;
-						force.y += ( pterm * dy + vterm * (pcurr->vel_eval.y - p->vel_eval.y) ) * dterm;
-						force.z += ( pterm * dz + vterm * (pcurr->vel_eval.z - p->vel_eval.z) ) * dterm;
-					}
-					pndx = pcurr->next;
-				}
-			}
-		}
-		p->sph_force = force;
-	}
-}
-
 // Compute Forces - Using spatial grid with saved neighbor table. Fastest.
 void FluidSystem::SPH_ComputeForceGridNC ()
 {
@@ -699,7 +566,14 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 	float c, d;
 	float dx, dy, dz;
 	float mR, mR2, visc;
-	float deltaTemp;
+	
+
+	//Heat Transfer Variables
+	float deltaTempAir; //The change in temp. due to surface particle/air heat transfer
+	float deltaTempParticle; //The change in temp. due to particle/particle heat transfer
+	float thermalDiffusionConstant;
+	float  new_temp;
+
 
 	d = m_Param[SPH_SIMSCALE];
 	mR = m_Param[SPH_SMOOTHRADIUS];
@@ -715,7 +589,9 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 
 
 		force.Set ( 0, 0, 0 );
-		deltaTemp = 0;
+		deltaTempAir = 0;
+		deltaTempParticle = 0;
+		new_temp = 0;
 		for (int j=0; j < m_NC[i]; j++ ) {
 			pcurr = (Fluid*) (mBuf[0].data + m_Neighbor[i][j]*mBuf[0].stride);
 			dx = ( p->pos.x - pcurr->pos.x)*d;		// dist in cm
@@ -732,25 +608,56 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 				force.y += ( pterm * dy + vterm * (pcurr->vel_eval.y - p->vel_eval.y) ) * dterm;
 				force.z += ( pterm * dz + vterm * (pcurr->vel_eval.z - p->vel_eval.z) ) * dterm;
 			}
+
+			//Update Temperature Based on particle/particle transfer
+			if(p->state == 1){
+				thermalDiffusionConstant = .1;
+			}
+			else{
+				thermalDiffusionConstant = .5;
+			}
+
+			//Distance between Particles
+			Vector3DF diff = p->pos; // distance between particle and its neighbor
+            diff -= pcurr->pos;
+            float dist = diff.Length();
+			float LapKern =  45.0f/(3.141592 * pow(1.1, 6));
+			float kernelTerm = LapKern * (1.1 - dist);
+			float tempDistTerm = ((pcurr->temperature - p->temperature) / pcurr->density);
+
+			//deltaTempParticle = deltaTempParticle + (m_Param [SPH_PMASS] * tempDistTerm * kernelTerm);
+			deltaTempParticle += m_Param [ SPH_PMASS ] * ((pcurr->temperature - p->temperature)/pcurr->density) * kernelTerm;
+			if(deltaTempParticle > 0){
+				int xs = 1;
+			}
+
 		}			
+
+		//p->temperature = p->temperature + thermalDiffusionConstant * deltaTempParticle * .1;
 
 		if(p->numNeighbors < 6){
 			//Surface Area Calculation
 			float surfaceArea = (6 - p->numNeighbors)/6.0 ;
 			surfaceArea = surfaceArea * (ss * ss * 6);
-			float heatTransfer = .000267 * (65 - p->temperature) * surfaceArea;
+			float heatTransfer = .5 * (293 - p->temperature) * surfaceArea;
 
-			deltaTemp = heatTransfer / (30 * m_Param [SPH_PMASS]);
-			p->temperature = p->temperature + deltaTemp;
+			deltaTempAir = heatTransfer / (3 * 3/*m_Param[SPH_PMASS]*/);
+			p->newTemp = p->newTemp + deltaTempAir;
 		}
+
+		
 
 		//if its a solid, just stay in place
 		if(p->state == 0){
 			force -= m_Vec[PLANE_GRAV_DIR];
 			force *= 1/m_Param[SPH_PMASS];
 		}
+
 		
+		
+		//p->newTemp += deltaTempParticle * .1;
 		p->sph_force = force;
+
 	}
 }
 
