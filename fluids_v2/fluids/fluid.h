@@ -41,7 +41,8 @@
 		Vector3DF		sph_force;
 
 		int				state; //0 is ice, 1 is water
-		float			temperature;
+		float			temperature; //Range from 0 to 250 (32 is melting point)
+		int				numNeighbors; //0-6, used for air temp advection
 
 	};
 

@@ -99,7 +99,7 @@
 		void SPH_ComputeForceGrid ();				// O(kn) - spatial grid
 		void SPH_ComputeForceGridNC ();				// O(cn) - neighbor table	
 
-			//Values for Simulation Size & Initial Ice Cube Size
+		//Values for Simulation Size & Initial Ice Cube Size
 		float volumeMinX; 
 		float volumeMinY; 
 		float volumeMinZ;
@@ -113,6 +113,8 @@
 		float cubeMaxX; 
 		float cubeMaxY; 
 		float cubeMaxZ;
+
+		void AdjustNeighbors(); //Update num of particle neighbors
 		
 	private:
 

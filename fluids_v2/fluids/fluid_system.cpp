@@ -76,6 +76,7 @@ void FluidSystem::Initialize ( int mode, int total )
 	//ICE Attributes
 	AddAttribute(0, "state", sizeof(int), false);
 	AddAttribute(0, "temperature", sizeof(float), false);
+	AddAttribute(0, "numNeighbors", sizeof(int), false);
 		
 	SPH_Setup ();
 	Reset ( total );	
@@ -125,6 +126,7 @@ int FluidSystem::AddPoint ()
 	f->density = 0;
 	f->state = 0;
 	f->temperature = 20;
+	f->numNeighbors = 6;
 	return ndx;
 }
 
@@ -145,6 +147,7 @@ int FluidSystem::AddPointReuse ()
 	f->density = 0;
 	f->state = 0;
 	f->temperature = 20;
+	f->numNeighbors = 6;
 	return ndx;
 }
 
@@ -368,7 +371,11 @@ void FluidSystem::Advance ()
 			colorVal = 1;
 		}
 
-		p->clr = COLORA(colorVal, colorVal, colorVal, 1);
+		if(colorVal < 0){
+			colorVal = 0;
+		}
+
+		p->clr = COLORA(colorVal, 1, colorVal, 1);
 
 
 		if ( m_Toggle[WRAP_X] ) {
@@ -411,23 +418,6 @@ void FluidSystem::Advance ()
 
 void FluidSystem::SPH_Setup ()
 {
-	//m_Param [ SPH_SIMSCALE ] =		0.01;	//.004		// unit size
-	//m_Param [ SPH_VISC ] =			0.2;			// pascal-second (Pa.s) = 1 kg m^-1 s^-1  (see wikipedia page on viscosity)
-	//m_Param [ SPH_RESTDENSITY ] =	600.0;			// kg / m^3
-	//m_Param [ SPH_PMASS ] =			0.00020543;		// kg
-	//m_Param [ SPH_PRADIUS ] =		0.002;			// m
-	//m_Param [ SPH_PDIST ] =			.0005; //0.0059;			// m
-	//m_Param [ SPH_SMOOTHRADIUS ] =	0.01;			// m 
-	//m_Param [ SPH_INTSTIFF ] =		1.00;
-	//m_Param [ SPH_EXTSTIFF ] =		10000.0;
-	//m_Param [ SPH_EXTDAMP ] =		256.0;
-	//m_Param [ SPH_LIMIT ] =			200.0;			// m / s
-
-	//m_Toggle [ SPH_GRID ] =		false;
-	//m_Toggle [ SPH_DEBUG ] =	false;
-
-	//SPH_ComputeKernels ();
-
 
 	m_Param [ SPH_SIMSCALE ] =		0.004;			// unit size
 	m_Param [ SPH_VISC ] =			0.2;			// pascal-second (Pa.s) = 1 kg m^-1 s^-1  (see wikipedia page on viscosity)
@@ -480,8 +470,9 @@ void FluidSystem::SPH_CreateExample ( int n, int nmax )
 
 	float ss = m_Param [ SPH_PDIST ]*0.87 / m_Param[ SPH_SIMSCALE ];	
 	printf ( "Spacing: %f\n", ss);
-	//ss = m_Param[SPH_SMOOTHRADIUS] * 2 + m_Param[SPH_SMOOTHRADIUS];
 	AddVolume ( m_Vec[SPH_INITMIN], m_Vec[SPH_INITMAX], ss );	// Create the particles
+
+	AdjustNeighbors();
 
 	float cell_size = m_Param[SPH_SMOOTHRADIUS]*2.0;			// Grid cell size (2r)	
 	Grid_Setup ( m_Vec[SPH_VOLMIN], m_Vec[SPH_VOLMAX], m_Param[SPH_SIMSCALE], cell_size, 1.0 );												// Setup grid
@@ -707,12 +698,14 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 	int i;
 	float c, d;
 	float dx, dy, dz;
-	float mR, mR2, visc;	
+	float mR, mR2, visc;
+	float deltaTemp;
 
 	d = m_Param[SPH_SIMSCALE];
 	mR = m_Param[SPH_SMOOTHRADIUS];
 	mR2 = (mR*mR);
 	visc = m_Param[SPH_VISC];
+	float ss = m_Param [ SPH_PDIST ]*0.87 / m_Param[ SPH_SIMSCALE ];	
 
 	dat1_end = mBuf[0].data + NumPoints()*mBuf[0].stride;
 	i = 0;
@@ -720,7 +713,9 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 	for ( dat1 = mBuf[0].data; dat1 < dat1_end; dat1 += mBuf[0].stride, i++ ) {
 		p = (Fluid*) dat1;
 
+
 		force.Set ( 0, 0, 0 );
+		deltaTemp = 0;
 		for (int j=0; j < m_NC[i]; j++ ) {
 			pcurr = (Fluid*) (mBuf[0].data + m_Neighbor[i][j]*mBuf[0].stride);
 			dx = ( p->pos.x - pcurr->pos.x)*d;		// dist in cm
@@ -739,6 +734,16 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 			}
 		}			
 
+		if(p->numNeighbors < 6){
+			//Surface Area Calculation
+			float surfaceArea = (6 - p->numNeighbors)/6.0 ;
+			surfaceArea = surfaceArea * (ss * ss * 6);
+			float heatTransfer = .000267 * (65 - p->temperature) * surfaceArea;
+
+			deltaTemp = heatTransfer / (30 * m_Param [SPH_PMASS]);
+			p->temperature = p->temperature + deltaTemp;
+		}
+
 		//if its a solid, just stay in place
 		if(p->state == 0){
 			force -= m_Vec[PLANE_GRAV_DIR];
@@ -749,3 +754,28 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 	}
 }
 
+void FluidSystem::AdjustNeighbors(){
+	char *dat1, *dat1_end;	
+	Fluid *p;
+	float ss = m_Param [ SPH_PDIST ]*0.87 / m_Param[ SPH_SIMSCALE ];
+
+	dat1_end = mBuf[0].data + NumPoints()*mBuf[0].stride;
+	
+	for ( dat1 = mBuf[0].data; dat1 < dat1_end; dat1 += mBuf[0].stride) {
+		p = (Fluid*) dat1;
+
+		Vector3DF pos = p->pos;
+
+		if (pos.x < m_Vec[SPH_INITMIN].x + ss || pos.x > m_Vec[SPH_INITMAX].x - ss ) {
+			p->numNeighbors--;
+		}
+
+		if (pos.y < m_Vec[SPH_INITMIN].y + ss || pos.y > m_Vec[SPH_INITMAX].y - ss ) {
+			p->numNeighbors--;
+		}
+		
+		if (pos.z < m_Vec[SPH_INITMIN].z + ss || pos.z > m_Vec[SPH_INITMAX].z - ss ) {
+			p->numNeighbors--;
+		}
+	}
+}
