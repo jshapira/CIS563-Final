@@ -115,6 +115,7 @@
     <ClCompile Include="common\point_set.cpp" />
     <ClCompile Include="common\vector.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="voxel_grid.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fluids\fluid.h" />
@@ -130,6 +131,8 @@
     <ClInclude Include="common\point_set.h" />
     <ClInclude Include="common\vector-inline.h" />
     <ClInclude Include="common\vector.h" />
+    <ClInclude Include="voxel_file_format.h" />
+    <ClInclude Include="voxel_grid.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="common\matrix.cci" />

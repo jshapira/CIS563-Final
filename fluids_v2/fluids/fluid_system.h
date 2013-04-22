@@ -30,6 +30,7 @@
 	#include <stdlib.h>
 	#include <math.h>
 
+	#include "../voxel_grid.h"
 	#include "point_set.h"
 	#include "fluid.h"
 
@@ -114,7 +115,10 @@
 		float cubeMaxY; 
 		float cubeMaxZ;
 
-		void AdjustNeighbors(); //Update num of particle neighbors
+		void SetNeighbors(); //initialize the number of neighbors
+		void AdjustNeighbors(Fluid*); //Update num of particle neighbors
+		void AddVolume ( Vector3DF, Vector3DF, float, VoxelGrid*); //Adjusted for voxel loading
+		VoxelGrid* voxelGrid;
 		
 	private:
 

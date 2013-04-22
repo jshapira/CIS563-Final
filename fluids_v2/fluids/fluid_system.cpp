@@ -37,19 +37,26 @@
 #define EPSILON			0.00001f			//for collision detection
 
 FluidSystem::FluidSystem (){
-	volumeMinX = -30; 
-	volumeMinY = -30; 
+	volumeMinX = -2; 
+	volumeMinY = -2; 
 	volumeMinZ = 0;
-	volumeMaxX = 30; 
-	volumeMaxY = 30; 
-	volumeMaxZ = 30;
+	volumeMaxX = 40; 
+	volumeMaxY = 20; 
+	volumeMaxZ = 40;
 
-	cubeMinX = -10; 
+	/*cubeMinX = -10; 
 	cubeMinY = -10; 
 	cubeMinZ = 2;
 	cubeMaxX = 10; 
 	cubeMaxY = 10; 
-	cubeMaxZ = 22;
+	cubeMaxZ = 22;*/
+
+	cubeMinX = 2; 
+	cubeMinY = 2; 
+	cubeMinZ = 2;
+	cubeMaxX = 80; 
+	cubeMaxY = 90; 
+	cubeMaxZ = 80;
 }
 
 void FluidSystem::Initialize ( int mode, int total )
@@ -244,14 +251,11 @@ void FluidSystem::Advance ()
 		}
 
 		//Advect Temperature
-		p->temperature = p->temperature + p->newTemp * m_DT * 100;
+		p->temperature = p->temperature + p->newTemp * m_DT;
 		p->newTemp = 0;
 
 
-		//Update state
-		if(p->temperature > 273){
-			p->state = 1;
-		}
+		
 	
 		// Boundary Conditions
 
@@ -436,7 +440,7 @@ void FluidSystem::SPH_Setup ()
 	m_Param [ SPH_VISC ] =			0.2;			// pascal-second (Pa.s) = 1 kg m^-1 s^-1  (see wikipedia page on viscosity)
 	m_Param [ SPH_RESTDENSITY ] =	600.0;			// kg / m^3
 	m_Param [ SPH_PMASS ] =			0.00020543;		// kg
-	m_Param [ SPH_PRADIUS ] =		0.004;			// m
+	m_Param [ SPH_PRADIUS ] =		0.002;			// m
 	m_Param [ SPH_PDIST ] =			0.0059;			// m
 	m_Param [ SPH_SMOOTHRADIUS ] =	0.01;			// m 
 	m_Param [ SPH_INTSTIFF ] =		1.00;
@@ -444,8 +448,11 @@ void FluidSystem::SPH_Setup ()
 	m_Param [ SPH_EXTDAMP ] =		256.0;
 	m_Param [ SPH_LIMIT ] =			200.0;			// m / s
 
-	m_Toggle [ SPH_GRID ] =		false;
-	m_Toggle [ SPH_DEBUG ] =	false;
+	//m_Toggle [ SPH_GRID ] =		false;
+	//m_Toggle [ SPH_DEBUG ] =	false;
+	
+	m_Toggle [ SPH_GRID ] =    true; false;
+	m_Toggle [ SPH_DEBUG ] =  true; false;
 
 	SPH_ComputeKernels ();
 }
@@ -473,19 +480,24 @@ void FluidSystem::SPH_CreateExample ( int n, int nmax )
 		m_Vec [ SPH_VOLMAX ].Set ( volumeMaxX, volumeMaxY, volumeMaxZ );
 		m_Vec [ SPH_INITMIN ].Set ( cubeMinX, cubeMinY, cubeMinZ );
 		m_Vec [ SPH_INITMAX ].Set ( cubeMaxX, cubeMaxY, cubeMaxZ );
+		voxelGrid = new VoxelGrid("voxelFiles/cube_80_v20.voxels");
 		break;
 	}	
+
+	nmax = voxelGrid->theDim[0] * voxelGrid->theDim[1] * voxelGrid->theDim[2];
+	Reset(nmax);
+	SetNeighbors();
 
 	SPH_ComputeKernels ();
 
 	m_Param [ SPH_SIMSIZE ] = m_Param [ SPH_SIMSCALE ] * (m_Vec[SPH_VOLMAX].z - m_Vec[SPH_VOLMIN].z);
 	m_Param [ SPH_PDIST ] = pow ( m_Param[SPH_PMASS] / m_Param[SPH_RESTDENSITY], 1/3.0 );	
 
-	float ss = m_Param [ SPH_PDIST ]*0.87 / m_Param[ SPH_SIMSCALE ];	
+	float ss = m_Param [ SPH_PDIST ]*0.87 / m_Param[ SPH_SIMSCALE ];
 	printf ( "Spacing: %f\n", ss);
-	AddVolume ( m_Vec[SPH_INITMIN], m_Vec[SPH_INITMAX], ss );	// Create the particles
+	AddVolume ( m_Vec[SPH_INITMIN], m_Vec[SPH_INITMAX], voxelGrid->voxelSize[0], voxelGrid);	// Create the particles
 
-	AdjustNeighbors();
+	
 
 	float cell_size = m_Param[SPH_SMOOTHRADIUS]*2.0;			// Grid cell size (2r)	
 	Grid_Setup ( m_Vec[SPH_VOLMIN], m_Vec[SPH_VOLMAX], m_Param[SPH_SIMSCALE], cell_size, 1.0 );												// Setup grid
@@ -580,6 +592,7 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 	mR2 = (mR*mR);
 	visc = m_Param[SPH_VISC];
 	float ss = m_Param [ SPH_PDIST ]*0.87 / m_Param[ SPH_SIMSCALE ];	
+	ss = voxelGrid->voxelSize[0]*2;
 
 	dat1_end = mBuf[0].data + NumPoints()*mBuf[0].stride;
 	i = 0;
@@ -627,62 +640,152 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 
 			//deltaTempParticle = deltaTempParticle + (m_Param [SPH_PMASS] * tempDistTerm * kernelTerm);
 			deltaTempParticle += m_Param [ SPH_PMASS ] * ((pcurr->temperature - p->temperature)/pcurr->density) * kernelTerm;
+			deltaTempParticle *= thermalDiffusionConstant;
 			if(deltaTempParticle > 0){
 				int xs = 1;
 			}
 
+			//p->newTemp += pcurr->temperature * .00001;
+
 		}			
 
 		//p->temperature = p->temperature + thermalDiffusionConstant * deltaTempParticle * .1;
-
-		if(p->numNeighbors < 6){
+		float heatTransfer;
+		if (p->state == 0) {
 			//Surface Area Calculation
-			float surfaceArea = (6 - p->numNeighbors)/6.0 ;
-			surfaceArea = surfaceArea * (ss * ss * 6);
-			float heatTransfer = .5 * (293 - p->temperature) * surfaceArea;
+			float surfaceArea = (6 - voxelGrid->adjacencyList[p->index.x][p->index.y][p->index.z])/6.0 ;
+			surfaceArea = surfaceArea * (voxelGrid->voxelSize[0] * voxelGrid->voxelSize[0] * 6);
+			heatTransfer = .00267 * (293 - p->temperature) * surfaceArea;
+			deltaTempAir = heatTransfer / (.0008);
 
-			deltaTempAir = heatTransfer / (3 * 3/*m_Param[SPH_PMASS]*/);
-			p->newTemp = p->newTemp + deltaTempAir;
+			
+		}
+		else if(p->state == 1){
+			heatTransfer = .00267 * (293 - p->temperature);
+			deltaTempAir = heatTransfer / (.0008);
 		}
 
+		//deltaTempAir = heatTransfer / (/*3 * 3*/15 * m_Param[SPH_PMASS]);
 		
 
 		//if its a solid, just stay in place
+		
 		if(p->state == 0){
 			force -= m_Vec[PLANE_GRAV_DIR];
 			force *= 1/m_Param[SPH_PMASS];
 		}
 
+		//Update state
+		if(p->temperature > 273 && p->state == 0){
+			AdjustNeighbors(p);
+			p->state = 1;
+		}
 		
 		
 		//p->newTemp += deltaTempParticle * .1;
 		p->sph_force = force;
+		//p->newTemp = /*deltaTempParticle p->newTemp*/deltaTempAir;
+		p->newTemp = deltaTempParticle + deltaTempAir;
 
 	}
 }
 
-void FluidSystem::AdjustNeighbors(){
-	char *dat1, *dat1_end;	
-	Fluid *p;
-	float ss = m_Param [ SPH_PDIST ]*0.87 / m_Param[ SPH_SIMSCALE ];
+void FluidSystem::SetNeighbors(){
+	//char *dat1, *dat1_end;	
+	//Fluid *p;
+	//float ss = m_Param [ SPH_PDIST ]*0.87 / m_Param[ SPH_SIMSCALE ];
 
-	dat1_end = mBuf[0].data + NumPoints()*mBuf[0].stride;
-	
-	for ( dat1 = mBuf[0].data; dat1 < dat1_end; dat1 += mBuf[0].stride) {
-		p = (Fluid*) dat1;
+	//dat1_end = mBuf[0].data + NumPoints()*mBuf[0].stride;
+	//
+	//for ( dat1 = mBuf[0].data; dat1 < dat1_end; dat1 += mBuf[0].stride) {
+	//	p = (Fluid*) dat1;
 
-		Vector3DF pos = p->pos;
+	//	Vector3DF pos = p->pos;
 
-		if (pos.x < m_Vec[SPH_INITMIN].x + ss || pos.x > m_Vec[SPH_INITMAX].x - ss ) {
-			p->numNeighbors--;
-		}
+	//	if (pos.x < m_Vec[SPH_INITMIN].x + ss || pos.x > m_Vec[SPH_INITMAX].x - ss ) {
+	//		p->numNeighbors--;
+	//	}
 
-		if (pos.y < m_Vec[SPH_INITMIN].y + ss || pos.y > m_Vec[SPH_INITMAX].y - ss ) {
-			p->numNeighbors--;
-		}
-		
-		if (pos.z < m_Vec[SPH_INITMIN].z + ss || pos.z > m_Vec[SPH_INITMAX].z - ss ) {
-			p->numNeighbors--;
+	//	if (pos.y < m_Vec[SPH_INITMIN].y + ss || pos.y > m_Vec[SPH_INITMAX].y - ss ) {
+	//		p->numNeighbors--;
+	//	}
+	//	
+	//	if (pos.z < m_Vec[SPH_INITMIN].z + ss || pos.z > m_Vec[SPH_INITMAX].z - ss ) {
+	//		p->numNeighbors--;
+	//	}
+	//}
+
+	short neighbors;
+    voxelGrid->adjacencyList[1][1][1] = 0;
+    for (int i = 0; i < voxelGrid->theDim[0]; i++) {
+        for (int j = 0; j < voxelGrid->theDim[2]; j++) {
+            for (int k = 0; k < voxelGrid->theDim[1]; k++) {
+                neighbors = 0;
+                if (voxelGrid->data[i][j][k]) { // if there is a voxel in that location
+                    if (i > 0 && voxelGrid->data[i-1][j][k]) neighbors++;
+                    if (i < voxelGrid->theDim[0] - 1 && voxelGrid->data[i+1][j][k]) neighbors++;
+
+                    if (j > 0 && voxelGrid->data[i][j-1][k]) neighbors++;
+                    if (j < voxelGrid->theDim[2] - 1 && voxelGrid->data[i][j+1][k]) neighbors++;
+
+                    if (k > 0 && voxelGrid->data[i][j][k-1]) neighbors++;
+                    if (k < voxelGrid->theDim[1] - 1 && voxelGrid->data[i][j][k+1]) neighbors++;
+                } else {
+                    neighbors = -1; //error state
+                }
+                voxelGrid->adjacencyList[i][j][k] = neighbors;
+            }
+        }
+    }
+
+
+}
+
+void FluidSystem::AdjustNeighbors(Fluid* p){
+	int pi = p->index.x;
+	int pj = p->index.y;
+	int pk = p->index.z;
+
+
+	voxelGrid->data[pi][pj][pk] = 0; // set to no particle
+	voxelGrid->adjacencyList[pi][pj][pk] = -1;
+
+    if (pi + 1 < voxelGrid->theDim[0]) voxelGrid->adjacencyList[pi+1][pj][pk]--;
+    if (pi - 1 > 0) voxelGrid->adjacencyList[pi-1][pj][pk]--;
+    if (pj + 1 < voxelGrid->theDim[2]) voxelGrid->adjacencyList[pi][pj+1][pk]--;
+    if (pj - 1 > 0) voxelGrid->adjacencyList[pi][pj-1][pk]--;
+    if (pk + 1 < voxelGrid->theDim[1]) voxelGrid->adjacencyList[pi][pj][pk+1]--;
+    if (pk - 1 > 0) voxelGrid->adjacencyList[pi][pj][pk-1]--;
+}
+
+void FluidSystem::AddVolume ( Vector3DF min, Vector3DF max, float spacing, VoxelGrid* vgrid)
+{
+	Vector3DF pos;
+	Fluid* p;	
+	float dx, dy, dz;
+	dx = max.x-min.x;
+	dy = max.y-min.y;
+	dz = max.z-min.z;
+
+	int count = 0;
+	for (float z = max.z; z >= min.z; z -= spacing ) {
+		for (float y = min.y; y <= max.y; y += spacing ) {	
+			for (float x = min.x; x <= max.x; x += spacing ) {
+                Vector3DF index = vgrid->inVoxelGrid(x,y,z);
+				if(index.x > 0 && index.y > 0 && index.z > 0){
+				   // std::cout << "count " <<count << std::endl;
+					count++;
+					p = (Fluid*)GetPoint ( AddPointReuse () );
+					pos.Set ( x, y, z);
+                    p->index = index;
+					//pos.x += -0.05 + float( rand() * 0.1 ) / RAND_MAX;
+					//pos.y += -0.05 + float( rand() * 0.1 ) / RAND_MAX;
+					//pos.z += -0.05 + float( rand() * 0.1 ) / RAND_MAX;
+					p->pos = pos;
+					p->clr = COLORA( (x-min.x)/dx, (y-min.y)/dy, (z-min.z)/dz, 1);
+
+				}
+			}
 		}
 	}
 }
