@@ -615,11 +615,35 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 			dterm = c * p->density * pcurr->density;
 			vterm = m_LapKern * visc;
 
+			Vector3DF diff = p->pos; // distance between particle and its neighbor
+            diff -= pcurr->pos;
+            float dist = diff.Length();
+
+
 			//Only update the force as a fluid if it is a liquid
-			if(p->state == 1){
+			if (p->state == 1){
+
+				//
+				//Vector3DF distance = pcurr->pos;
+				//distance -= p->pos; //weird needing to be done like this
+				diff *= 1/(pow(dist,2)); 
+				//
 				force.x += ( pterm * dx + vterm * (pcurr->vel_eval.x - p->vel_eval.x) ) * dterm;
 				force.y += ( pterm * dy + vterm * (pcurr->vel_eval.y - p->vel_eval.y) ) * dterm;
 				force.z += ( pterm * dz + vterm * (pcurr->vel_eval.z - p->vel_eval.z) ) * dterm;
+				//NOW CHECK IF NEIGHBORS ARE ICE OR WATER
+				float iceConstant = 5000;
+				float waterConstant = 50;
+				if (pcurr->state == 0){ //water next to ice
+					force.x += diff.x * iceConstant;
+					force.y += diff.y * iceConstant;
+					force.z += diff.z * iceConstant;
+				}
+				else { //water next to more water
+					force.x += diff.x * waterConstant;
+					force.y += diff.y * waterConstant;
+					force.z += diff.z * waterConstant;
+				}
 			}
 
 			//Update Temperature Based on particle/particle transfer
@@ -631,9 +655,9 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 			}
 
 			//Distance between Particles
-			Vector3DF diff = p->pos; // distance between particle and its neighbor
+			/*Vector3DF diff = p->pos; // distance between particle and its neighbor
             diff -= pcurr->pos;
-            float dist = diff.Length();
+            float dist = diff.Length();*/
 			float LapKern =  45.0f/(3.141592 * pow(1.1, 6));
 			float kernelTerm = LapKern * (1.1 - dist);
 			float tempDistTerm = ((pcurr->temperature - p->temperature) / pcurr->density);
