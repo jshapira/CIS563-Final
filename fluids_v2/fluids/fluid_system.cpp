@@ -41,7 +41,7 @@ FluidSystem::FluidSystem (){
 	volumeMinY = -2; 
 	volumeMinZ = 0;
 	volumeMaxX = 40; 
-	volumeMaxY = 20; 
+	volumeMaxY = 40; 
 	volumeMaxZ = 40;
 
 	/*cubeMinX = -10; 
@@ -254,6 +254,9 @@ void FluidSystem::Advance ()
 		p->temperature = p->temperature + p->newTemp * m_DT;
 		p->newTemp = 0;
 
+		if(p->temperature > 400){
+			p->temperature = 400;
+		}
 
 		
 	
@@ -480,7 +483,7 @@ void FluidSystem::SPH_CreateExample ( int n, int nmax )
 		m_Vec [ SPH_VOLMAX ].Set ( volumeMaxX, volumeMaxY, volumeMaxZ );
 		m_Vec [ SPH_INITMIN ].Set ( cubeMinX, cubeMinY, cubeMinZ );
 		m_Vec [ SPH_INITMAX ].Set ( cubeMaxX, cubeMaxY, cubeMaxZ );
-		voxelGrid = new VoxelGrid("voxelFiles/cube_80_v20.voxels");
+		voxelGrid = new VoxelGrid("voxelFiles/happy.voxels");
 		break;
 	}	
 
@@ -694,15 +697,17 @@ void FluidSystem::SPH_ComputeForceGridNC ()
 
 		//if its a solid, just stay in place
 		
-		if(p->state == 0){
-			force -= m_Vec[PLANE_GRAV_DIR];
-			force *= 1/m_Param[SPH_PMASS];
-		}
+		
 
 		//Update state
 		if(p->temperature > 273 && p->state == 0){
 			AdjustNeighbors(p);
 			p->state = 1;
+		}
+
+		if(p->state == 0){
+			force -= m_Vec[PLANE_GRAV_DIR];
+			force *= 1/m_Param[SPH_PMASS];
 		}
 		
 		
